@@ -7,6 +7,7 @@ import pickle
 import laspy
 from pathlib import Path
 import shutil
+import h5py
 import glob
 
 with open('config.json', 'r') as file:
@@ -204,12 +205,14 @@ def generate_vectors(possible_vectors, populated_nodes, parent_node, means, stds
             if abs(ratio_distance - 1) < threshold: # check ratio distance
                 if test_valid_vector((means[vector[0]], means[vector[1]], means[vector[2]]), angle_threshold):
                     vector_leaf_status = [leaf_status[vector[0]], leaf_status[vector[1]], leaf_status[vector[2]]]
-                    validated_vectors.append([list(means[vector[0]]), list(means[vector[2]]), vector_leaf_status, parent_node])
+                    validated_vectors.append([means[vector[0]], means[vector[2]], vector_leaf_status, parent_node])
     except:
         raise ValueError("Error validating vector varience or error angle.")
 
     return pd.DataFrame(validated_vectors, columns=['P1', "P2", 'leaf_status', 'depth'])
 
+
+import h5py
 import numpy as np
 from multiprocessing import Lock
 
@@ -324,3 +327,20 @@ def visualize_test_valid_vector(vector, tolerance_angle):
     
     # Show the plot
     plt.show()
+
+def las_to_csv(file_path, csv_path):
+    with laspy.open(file_path) as las_file:
+        las_columns = [x[0] for x in las_file.header.point_format.dimensions]
+        header = pd.DataFrame(columns=las_columns)
+        header.to_csv(csv_path, index=False)
+
+        # If you want to process points in chunks:
+        current_line = 0
+        chunk_size = 100000
+        for points in las_file.chunk_iterator(chunk_size):
+            chunk = pd.DataFrame(points.array, columns=las_columns)
+            current_line += len(chunk)
+            print("Processing chunk...")
+            chunk.to_csv(csv_path, mode="a", header=False, index=False)
+
+            print(f"{100 * current_line / las_file.header.point_count} % processed.")

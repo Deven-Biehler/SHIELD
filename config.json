@@ -1,8 +1,6 @@
 {
     "datasets": [
-        {"file": "data/damage_detection/house_damaged_rsampled0_5.csv", "scale": 0.01},
-        {"file": "data/damage_detection/house_rsample0_5.csv", "scale": 0.01}
-        
+        {"file": "data/damage_detection/house.laz", "scale": 0.1}
     ],
     "tree_file": "out/tree_partitions",
     "output_dir": "out",
@@ -16,11 +14,7 @@
     "reduction_columns": [
         "X",
         "Y",
-        "Z",
-        "intensity",
-        "red",
-        "green",
-        "blue"
+        "Z"
     ],
     "pca_results": "pca_results.csv",
     "tolerance": {

@@ -370,12 +370,11 @@ def create_sub_trees(file_path):
 
 
 
-def stage1(input_file, scale):
+def stage1(input_file):
     print("Starting Stage 1 ...\n_____________________________________________________________")
     start_time = time.time()
     
     config['input_file'] = input_file
-    config['scale'] = scale
     create_sub_trees(config['input_file'])
 
     

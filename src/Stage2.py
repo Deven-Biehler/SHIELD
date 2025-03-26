@@ -176,7 +176,7 @@ def recursive_worker(args):
         current_node = {"data": pd.read_csv(sub_tree_path), "boundaries": boundaries}
     except Exception as e:
         print(f"Error reading csv file{sub_tree_path} (recursive): {e}")
-    sub_tree_int = "-".join(sub_tree_path.split("-")[1:]).split(".")[0]
+    sub_tree_int = sub_tree_path.split("-")[-1].split(".")[0]
     sub_tree, df_result, _ = compute_sub_tree(sub_tree_path, current_node, tolerance, sub_tree_int, vector_lock, current_node["data"].mean(), config)
     # save results
     os.remove(sub_tree_path)
