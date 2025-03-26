@@ -7,7 +7,6 @@ import pickle
 import laspy
 from pathlib import Path
 import shutil
-import h5py
 import glob
 
 with open('config.json', 'r') as file:
@@ -205,14 +204,12 @@ def generate_vectors(possible_vectors, populated_nodes, parent_node, means, stds
             if abs(ratio_distance - 1) < threshold: # check ratio distance
                 if test_valid_vector((means[vector[0]], means[vector[1]], means[vector[2]]), angle_threshold):
                     vector_leaf_status = [leaf_status[vector[0]], leaf_status[vector[1]], leaf_status[vector[2]]]
-                    validated_vectors.append([means[vector[0]], means[vector[2]], vector_leaf_status, parent_node])
+                    validated_vectors.append([list(means[vector[0]]), list(means[vector[2]]), vector_leaf_status, parent_node])
     except:
         raise ValueError("Error validating vector varience or error angle.")
 
     return pd.DataFrame(validated_vectors, columns=['P1', "P2", 'leaf_status', 'depth'])
 
-
-import h5py
 import numpy as np
 from multiprocessing import Lock
 

@@ -1,0 +1,31 @@
+{
+    "datasets": [
+        {"file": "data/damage_detection/house_damaged_rsampled0_5.csv", "scale": 0.01},
+        {"file": "data/damage_detection/house_rsample0_5.csv", "scale": 0.01}
+        
+    ],
+    "tree_file": "out/tree_partitions",
+    "output_dir": "out",
+    "max_memory": 4,
+    "max_workers": 16,
+    "partitioning_columns": [
+        "X",
+        "Y",
+        "Z"
+    ],
+    "reduction_columns": [
+        "X",
+        "Y",
+        "Z",
+        "intensity",
+        "red",
+        "green",
+        "blue"
+    ],
+    "pca_results": "pca_results.csv",
+    "tolerance": {
+        "X": 0.1,
+        "Y": 0.1,
+        "Z": 0.1
+    }
+}
