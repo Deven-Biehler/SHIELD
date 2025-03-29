@@ -11,7 +11,6 @@ from Bio import Phylo
 from visualize_trees import generate_itol_trees
 
 
-
 def tree_edit_distance_by_level(tree1, tree2, insert_cost=1, delete_cost=1, update_cost=1):
     """
     Calculate tree edit distance at each level of the tree.
@@ -572,80 +571,42 @@ def carve_hole(las, center, radius, removal_fraction=0.5):
     return new_las
 
 
-def generate_damages(las_file, bounding_box, spheres, output_file, undamaged_las_file):
-    """
-    Function to generate damages in the LAS file based on the provided bounding box and spheres.
-    
-    Parameters:
-        las_file (str): Path to the input LAS file.
-        bounding_box (tuple): ((xmin, xmax), (ymin, ymax), (zmin, zmax)) defining the bounding box.
-        spheres (list): List of tuples containing center and radius for each sphere.
-        
-    Returns:
-        None
-    """
-    
-    las = laspy.read(las_file)
+def generate_damages(las, spheres):
     # Sub-select points within the bounding box
     # bounding_box = apply_transformation_box(bounding_box, scale=las.header.scale, offset=las.header.offset, validation_las=las)
-    sub_las = sub_select_bounding_box(las, bounding_box)
-    sub_las_undamaged = sub_select_bounding_box(las, bounding_box)
     
     # Carve holes in the sub-selected LAS file
     # spheres = apply_transformation_sphere(spheres, scale=las.header.scale, offset=las.header.offset, validation_las=las)
     for sphere in spheres:
         radius, center = sphere
-        sub_las = carve_hole(sub_las, center, radius, removal_fraction=1)
+        las = carve_hole(las, center, radius, removal_fraction=1)
 
     
     # Save the modified LAS file
-    sub_las.write(output_file)
-    sub_las_undamaged.write(undamaged_las_file)
+    return las
 
 
 
 
-def random_sample_dataset(las_file, output_file, sample_percentage):
-    """
-    Function to random sample the dataset for testing
-    """
-    
-    las = laspy.read(las_file)
+def random_sample_dataset(las, sample_percentage):
     num_points = len(las.points)
     num_sampled_points = int(num_points * sample_percentage)
     sampled_indices = np.random.choice(num_points, num_sampled_points, replace=False)
     sampled_points = las.points[sampled_indices]
 
     las.points = sampled_points
-    las.write(output_file)
+    
+    return las
 
-    print(f"Sampled LAS file saved to {output_file}")
-
-def convert_las_to_csv(las_file, csv_file):
-    """
-    Function to convert LAS file to CSV
-    """
-    las_to_csv(las_file, csv_file)
-    print(f"Converted {las_file} to {csv_file}")
-
-def run_shield_on_datasets():
-    """
-    Function to run SHIELD on the datasets
-    """
 
 
 
 if __name__ == "__main__":
-    # print("Starting Damage Detection Pipeline")
-    # # Decompress laz file
-    # laz_file = "data/lidar_data/AVST0069_A10.laz"
-    # las_file = laz_file[:-4] + ".las"
-    # convert_laz_to_las(laz_file, las_file)
+    # CONFIGURATION
+    point_cloud_data = "data/lidar_data/AVST0069_A10.las"
+    damaged_las = "data/lidar_data/test_data/house_damaged.las"
+    undamaged_las = "data/lidar_data/test_data/house_undamaged.las"
 
-
-
-    # Generate Damages
-    las_file = "data/lidar_data/AVST0069_A10.las"
     bounding_box_center = 2436290.765, 230778.356, 2430.159
     bounding_box_size = 229.432, 193.675, 81.360
     bounding_box = (
@@ -656,71 +617,67 @@ if __name__ == "__main__":
     spheres = [
             ((12.736, 12.736, 12.736), (2436364.146, 230853.643, 2432.263))
         ]
+    sample_percentage = 0.5  # 10% of the dataset
+    scale = 0.2
+    # CONFIGURATION
 
-    damaged_las_file = "data/lidar_data/AVST0069_A10_damaged_0.las"
-    undamaged_las_file = "data/lidar_data/AVST0069_A10_undamaged_0.las"
-    generate_damages(las_file, bounding_box, spheres, damaged_las_file, undamaged_las_file)
+
+
+
+
+
+
+    # Convert LAZ to LAS
+    las_file = point_cloud_data
+
+
+    print("Starting Damage Detection Pipeline")
+    las = laspy.read(las_file)
+    las = sub_select_bounding_box(las=las, bounding_box=bounding_box)
+    las = generate_damages(las=las, spheres=spheres)
+    las = random_sample_dataset(las=las, sample_percentage=sample_percentage)
+    las.write(damaged_las)
+    damaged_csv = damaged_las.replace('.las', '.csv')
+    las_to_csv(damaged_las, damaged_csv)
+
+    las = laspy.read(las_file)
+    las = sub_select_bounding_box(las=las, bounding_box=bounding_box)
+    las = random_sample_dataset(las=las, sample_percentage=sample_percentage)
+    las.write(undamaged_las)
+    undamaged_csv = undamaged_las.replace('.las', '.csv')
+    las_to_csv(undamaged_las, undamaged_csv)
+
     
-    
-
-
-    # Random sample dataset twice for testing
-    sample_percentage = 0.1  # 10% of the dataset
-
-    random_sample_dataset(undamaged_las_file, undamaged_las_file, sample_percentage)
-    random_sample_dataset(damaged_las_file, damaged_las_file, sample_percentage)
-
-
-    # Convert las files to csv
-    undamaged_csv = undamaged_las_file.replace('.las', '.csv')
-    damaged_csv = damaged_las_file.replace('.las', '.csv')
-    convert_las_to_csv(undamaged_las_file, undamaged_csv)
-    convert_las_to_csv(damaged_las_file, damaged_csv)
-
-
-    # Run SHIELD on both datasets
     undamaged_test = {
         "file": undamaged_csv,
-        "scale": 0.1
+        "scale": scale
     }
     damaged_test = {
         "file": damaged_csv,
-        "scale": 0.1
+        "scale": scale
     }
     shield_pipeline(undamaged_test)
     shield_pipeline(damaged_test)
 
 
-    # Compare trees and generate report
-    undamaged_tree = generate_tree("reduced results/AVST0069_A10_undamaged_0_0.1/tree_partitions/")
-    damaged_tree = generate_tree("reduced results/AVST0069_A10_damaged_0_0.1/tree_partitions/")
-    # graph1, _ = dict_to_networkx(undamaged_tree)
-    # graph2, _ = dict_to_networkx(damaged_tree)
 
-        # Fix: Use a custom stringizer function
+
+
+
+
+
+    # Compare trees and generate report
+    undamaged_tree = generate_tree(f"reduced results/house_undamaged_{scale}/tree_partitions/")
+    damaged_tree = generate_tree(f"reduced results/house_damaged_{scale}/tree_partitions/")
+
     def my_stringizer(value):
         if isinstance(value, (str, int, float, bool)):
             return value
         else:
             return str(value)
-
-    # nx.write_gml(graph1, "tree1.gml", stringizer=my_stringizer)
-    # nx.write_gml(graph2, "tree2.gml", stringizer=my_stringizer)
-
-    
-    # newick_string = networkx_to_newick(graph1)
-    # newick_string2 = networkx_to_newick(graph2)
-
-    # # Save to file
-    # with open("tree.newick", "w") as f:
-    #     f.write(newick_string)
-
-    # with open("tree2.newick", "w") as f:
-    #     f.write(newick_string2)
-
     print(count_nodes_by_level(undamaged_tree))
     print(count_nodes_by_level(damaged_tree))
-    # print(tree_edit_distance(undamaged_tree, damaged_tree))
+    print(tree_edit_distance(undamaged_tree, damaged_tree))
     print(tree_edit_distance_by_level(undamaged_tree, damaged_tree)[0])
     
 
